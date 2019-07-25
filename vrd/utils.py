@@ -1,10 +1,19 @@
 import os
+import glob
 import pandas as pd
 import struct
 import imghdr
 import cv2
 
 import settings
+
+def get_train_img_fullpath_dict():
+    img_files = glob.glob(settings.TRAIN_IMG_DIR + '/**/*.jpg')
+    print('num image files:', len(img_files))
+    fullpath_dict = {}
+    for fn in img_files:
+        fullpath_dict[os.path.basename(fn).split('.')[0]] = fn
+    return fullpath_dict
 
 def get_top_classes(start_index=0, end_index=57):
     df = pd.read_csv(os.path.join(settings.DATA_DIR, 'top_classes.csv'))
