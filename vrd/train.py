@@ -111,10 +111,10 @@ def train(args):
         bg = time.time()
         for batch_idx, data in enumerate(train_loader):
             train_iter += 1
-            img, target  = data
-            img, target = img.cuda(), target.cuda()
+            img, label1, target  = data
+            img, label1, target = img.cuda(), label1.cuda(), target.cuda()
             
-            output = model(img)
+            output = model(img, label1)
 
             loss = criterion(output, target)
             batch_size = img.size(0)
@@ -189,9 +189,9 @@ def validate(args, model: nn.Module, valid_loader):
     model.eval()
     all_losses, corrects, total_num = [], 0, 0
     with torch.no_grad():
-        for inputs, targets in valid_loader:
-            inputs, targets = inputs.cuda(), targets.cuda()
-            outputs = model(inputs)
+        for inputs, label1, targets in valid_loader:
+            inputs, label1, targets = inputs.cuda(), label1.cuda(), targets.cuda()
+            outputs = model(inputs, label1)
 
             loss = criterion(outputs, targets)
             all_losses.append(loss.item())
@@ -219,11 +219,10 @@ def pred_model_output(model, loader, labeled=True):
     scores, preds, labels = [], [], []
     with torch.no_grad():
         for batch in tqdm(loader, total=loader.num // loader.batch_size):
+            img = batch[0].cuda()
+            label1 = batch[1].cuda()
             if labeled:
-                img = batch[0].cuda()
-                labels.append(batch[1])
-            else:
-                img = batch.cuda()
+                labels.append(batch[2])
             output = model(img)
 
             score, pred = output.max(1)

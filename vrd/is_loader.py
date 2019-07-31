@@ -13,6 +13,15 @@ from tqdm import tqdm
 import settings
 
 
+classes_is = [
+    '/m/04bcr3', '/m/04dr76w', '/m/01mzpv', '/m/078n6m', '/m/0342h',
+    '/m/03m3pdh', '/m/03ssj5', '/m/01_5g', '/m/01y9k5', '/m/0cvnqh',
+    '/m/07y_7', '/m/071p9', '/m/05r5c', '/m/01940j', '/m/01s55n',
+    '/m/080hkjn', '/m/026t6', '/m/02p5f1q', '/m/0cmx8', '/m/0dt3t',
+    '/m/0584n8', '/m/04ctx', '/m/02jvh9'
+    ]
+
+classes_is_stoi = { classes_is[i]: i for i in range(len(classes_is)) }
 
 classes = ['none', '/m/083vt', '/m/02gy9n', '/m/05z87', '/m/04lbp', '/m/0dnr7']
 stoi = { classes[i]: i for i in range(len(classes)) }
@@ -49,7 +58,7 @@ def img_augment(p=1.):
         #
         ShiftScaleRotate(shift_limit=0.0625, scale_limit=0.1, rotate_limit=10, p=.75 ),
         RandomBrightnessContrast(p=0.2),
-        GaussNoise(),
+        #GaussNoise(),
         #Blur(blur_limit=3, p=.33),
         #OpticalDistortion(p=.33),
         #GridDistortion(p=.33),
@@ -116,20 +125,22 @@ class ImageDataset(data.Dataset):
         row = self.df.iloc[index]
         img = self.get_img(row)    
         if self.test_mode:
-            return img
+            return img, classes_is_stoi[row.LabelName]
         else:
-            return img, stoi[row.LabelName2]
+            return img, classes_is_stoi[row.LabelName], stoi[row.LabelName2]
 
     def __len__(self):
         return len(self.df)
 
     def collate_fn(self, batch):
+        imgs = torch.stack([x[0] for x in batch])
+        label1 = torch.tensor([x[1] for x in batch])
+
         if self.test_mode:
-            return torch.stack(batch)
+            return imgs, label1
         else:
-            imgs = torch.stack([x[0] for x in batch])
-            labels = torch.tensor([x[1] for x in batch])
-            return imgs, labels
+            labels = torch.tensor([x[2] for x in batch])
+            return imgs, label1, labels
 
 def prepare_dataset(box_file='challenge-2019-train-vrd-bbox.csv', vrd_file='challenge-2019-train-vrd.csv'):
     df_vrd = pd.read_csv(os.path.join(DATA_DIR, vrd_file), converters={
@@ -162,6 +173,13 @@ def prepare_dataset(box_file='challenge-2019-train-vrd-bbox.csv', vrd_file='chal
     print(df_train_is.shape)
     df_train_is.LabelName2 = df_train_is.LabelName2.fillna('none')
     print(df_train_is.LabelName2.value_counts())
+
+    print(df_train_is.head())
+    #print(df_train_is.columns)
+    #print(df_train_is.LabelName.value_counts())
+    #print(df_train_is.loc[df_train_is.LabelName == df_train_is.LabelName1].shape)
+    #print(df_train_is.loc[df_train_is.LabelName != df_train_is.LabelName1].shape)
+    #print(df_train_is.shape)
     return df_train_is
 
 def get_train_loader(batch_size=4, dev_mode=False):
@@ -185,13 +203,6 @@ def get_val_loader(batch_size=4, dev_mode=False, val_num=10000):
     loader.num = len(ds)
     return loader
 
-classes_is = [
-    '/m/04bcr3', '/m/04dr76w', '/m/01mzpv', '/m/078n6m', '/m/0342h',
-    '/m/03m3pdh', '/m/03ssj5', '/m/01_5g', '/m/01y9k5', '/m/0cvnqh',
-    '/m/07y_7', '/m/071p9', '/m/05r5c', '/m/01940j', '/m/01s55n',
-    '/m/080hkjn', '/m/026t6', '/m/02p5f1q', '/m/0cmx8', '/m/0dt3t',
-    '/m/0584n8', '/m/04ctx', '/m/02jvh9'
-    ]
 
 def get_det(pred_str):
     dets = []
@@ -246,19 +257,19 @@ def get_test_loader(dets_file_name, batch_size=4, dev_mode=False):
 
 
 def test_train_loader():
-    train_loader = get_val_loader(dev_mode=False)
-    for img, label in train_loader:
+    train_loader = get_train_loader(dev_mode=False)
+    for img, label1, labels in train_loader:
         print(img.size())
         print(label)
         break
 
 def test_test_loader():
     test_loader = get_test_loader('/mnt/chicm/open-images-vrd/notebooks/sub_detect_0724.csv', 4, dev_mode=True)
-    for img in test_loader:
+    for img, label1 in test_loader:
         print(img.size())
         break
 
 if __name__ == '__main__':
-    #test_train_loader()
-    test_test_loader()
+    test_train_loader()
+    #test_test_loader()
     #test_index_loader()

@@ -49,8 +49,8 @@ model = dict(
             target_stds=[0.1, 0.1, 0.2, 0.2],
             reg_class_agnostic=True,
             loss_cls=dict(
-                type='CrossEntropyLoss',
-                use_sigmoid=False,
+                type='FocalLoss',
+                use_sigmoid=True,
                 loss_weight=1.0),
             loss_bbox=dict(
                 type='SmoothL1Loss',
@@ -67,8 +67,8 @@ model = dict(
             target_stds=[0.05, 0.05, 0.1, 0.1],
             reg_class_agnostic=True,
             loss_cls=dict(
-                type='CrossEntropyLoss',
-                use_sigmoid=False,
+                type='FocalLoss',
+                use_sigmoid=True,
                 loss_weight=1.0),
             loss_bbox=dict(
                 type='SmoothL1Loss',
@@ -85,8 +85,8 @@ model = dict(
             target_stds=[0.033, 0.033, 0.067, 0.067],
             reg_class_agnostic=True,
             loss_cls=dict(
-                type='CrossEntropyLoss',
-                use_sigmoid=False,
+                type='FocalLoss',
+                use_sigmoid=True,
                 loss_weight=1.0),
             loss_bbox=dict(
                 type='SmoothL1Loss',
@@ -235,7 +235,7 @@ data = dict(
         test_mode=True))
 # optimizer
 #optimizer = dict(type='SGD', lr=0.02, momentum=0.9, weight_decay=0.0001)
-optimizer = dict(type='Adam', lr=0.00004, weight_decay=0.0001)
+optimizer = dict(type='Adam', lr=0.0004, weight_decay=0.0001)
 optimizer_config = dict(grad_clip=dict(max_norm=35, norm_type=2))
 # learning policy
 lr_config = dict(
@@ -243,8 +243,8 @@ lr_config = dict(
     warmup='linear',
     warmup_iters=200,
     warmup_ratio=1.0 / 3,
-    #step=[1000, 4000, 8000],
-    step=[8000, 16000],
+    step=[1000, 2000, 4000, 8000],
+    #step=[8000],
     gamma=0.5,
     by_epoch=False)
 checkpoint_config = CheckpointHook(interval=500) #dict(interval=1)
@@ -260,7 +260,7 @@ log_config = dict(
 total_epochs = 15
 dist_params = dict(backend='nccl')
 log_level = 'INFO'
-work_dir = './work_dirs/rel_cas'
-load_from =  './work_dirs/rel_cas/latest.pth'
+work_dir = './work_dirs/rel_cas_focal'
+load_from =  './work_dirs/rel_cas_focal/latest.pth'
 resume_from = None
 workflow = [('train', 1)]

@@ -67,22 +67,31 @@ class RelIsNet(nn.Module):
         super(RelIsNet, self).__init__()
         print('num_classes:', num_classes)
         self.backbone = create_imagenet_backbone(backbone_name)
+        self.label1_emb = nn.Embedding(23, 512, padding_idx=-1)
         ftr_num = get_num_features(backbone_name)
 
         self.ftr_num = ftr_num
         self.avg_pool = nn.AdaptiveAvgPool2d(1)
-        self.logit = nn.Linear(ftr_num, num_classes)
+        self.fc = nn.Linear(ftr_num+512, num_classes)
         self.name = 'RelIsNet_{}_{}'.format(backbone_name, num_classes)
 
-    def logits(self, x):
-        x = self.avg_pool(x)
-        x = F.dropout2d(x, 0.4, self.training)
-        x = x.view(x.size(0), -1)
-        return self.logit(x)
+    #def logits(self, x):
+    #    x = self.avg_pool(x)
+    #    x = F.dropout2d(x, 0.4, self.training)
+    #    x = x.view(x.size(0), -1)
+    #    return self.logit(x)
     
-    def forward(self, x):
-        x = self.backbone.features(x)
-        return self.logits(x)
+    def forward(self, img, label1):
+        x1 = self.backbone.features(img)
+        x1 = self.avg_pool(x1).view(x1.size(0), -1)
+        x1 = F.dropout(x1, 0.2, self.training)
+
+        x2 = self.label1_emb(label1)
+        #print(x1.size(), x2.size())
+        x = torch.cat([x1, x2], 1)
+        x = F.dropout(x, 0.2, self.training)
+
+        return self.fc(x)
 
 IS_MODEL_DIR = './output'
 
@@ -123,9 +132,11 @@ def test():
     args.ckp_name = 'best_model.pth'
     args.predict = False
     args.num_classes = 6
+    label1 = torch.tensor([10]*2).cuda()
+    print(label1.size())
 
     model = create_model(args)[0].cuda()
-    y = model(x)
+    y = model(x, label1)
     print(y.size(), y)
 
 
