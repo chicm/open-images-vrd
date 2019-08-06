@@ -23,7 +23,7 @@ model = dict(
         num_outs=5),
     bbox_head=dict(
         type='GARetinaHead',
-        num_classes=43,
+        num_classes=58,
         in_channels=256,
         stacked_convs=4,
         feat_channels=256,
@@ -83,7 +83,7 @@ test_cfg = dict(
     nms=dict(type='nms', iou_thr=0.5),
     max_per_img=50)
 # dataset settings
-dataset_type = 'RelationIs42CustomDataset'
+dataset_type = 'RelationCustomDataset'
 data_root = settings.ROOT_DIR
 img_norm_cfg = dict(
     mean=[123.675, 116.28, 103.53], std=[58.395, 57.12, 57.375], to_rgb=True)
@@ -136,7 +136,7 @@ data = dict(
         with_label=False,
         test_mode=True))
 # optimizer
-optimizer = dict(type='Adam', lr=0.00002, weight_decay=0.0001)
+optimizer = dict(type='Adam', lr=0.00004, weight_decay=0.0001)
 optimizer_config = dict(grad_clip=dict(max_norm=35, norm_type=2))
 # learning policy
 lr_config = dict(
@@ -144,7 +144,7 @@ lr_config = dict(
     warmup='linear',
     warmup_iters=200,
     warmup_ratio=1.0 / 3,
-    step=[4000, 8000],
+    step=[4000, 12000],
     #step=[80000],
     gamma=0.5,
     by_epoch=False)
@@ -162,7 +162,7 @@ total_epochs = 12
 #device_ids = range(8)
 dist_params = dict(backend='nccl')
 log_level = 'INFO'
-work_dir = './work_dirs/ga_retinanet_x101_32x4d_fpn_1x_is_42'
-load_from = './work_dirs/ga_retinanet_x101_32x4d_fpn_1x_is_42/latest.pth' 
+work_dir = './work_dirs/ga_retinanet_x101_32x4d_fpn_1x_detect_57'
+load_from = './work_dirs/ga_retinanet_x101_32x4d_fpn_1x_detect_57/latest.pth' 
 resume_from = None
 workflow = [('train', 1)]

@@ -63,5 +63,36 @@ def get_image_size(fname):
 
         return width, height
 
+def get_iou(row):
+    #assert row['XMin1'] <= row['XMax1']
+    #assert row['YMin1'] <= row['YMax1']
+    #assert row['XMin2'] <= row['XMax2']
+    #assert row['YMin2'] <= row['YMax2']
+
+    # determine the coordinates of the intersection rectangle
+    x_left = max(row['XMin1'], row['XMin2'])
+    y_top = max(row['YMin1'], row['YMin2'])
+    x_right = min(row['XMax1'], row['XMax2'])
+    y_bottom = min(row['YMax1'], row['YMax2'])
+
+    if x_right < x_left or y_bottom < y_top:
+        return 0.0
+
+    # The intersection of two axis-aligned bounding boxes is always an
+    # axis-aligned bounding box
+    intersection_area = (x_right - x_left) * (y_bottom - y_top)
+
+    # compute the area of both AABBs
+    bb1_area = (row['XMax1'] - row['XMin1']) * (row['YMax1'] - row['YMin1'])
+    bb2_area = (row['XMax2'] - row['XMin2']) * (row['YMax2'] - row['YMin2'])
+
+    # compute the intersection over union by taking the intersection
+    # area and dividing it by the sum of prediction + ground-truth
+    # areas - the interesection area
+    iou = intersection_area / float(bb1_area + bb2_area - intersection_area + 1e-6)
+    assert iou >= 0.0
+    assert iou <= 1.0
+    return iou
+
 if __name__ == '__main__':
     get_top_classes()

@@ -185,13 +185,13 @@ data_root = settings.ROOT_DIR
 img_norm_cfg = dict(
     mean=[123.675, 116.28, 103.53], std=[58.395, 57.12, 57.375], to_rgb=True)
 data = dict(
-    imgs_per_gpu=3,
-    workers_per_gpu=3,
+    imgs_per_gpu=2,
+    workers_per_gpu=2,
     train=dict(
         type=dataset_type,
         ann_file=data_root + '/detect/train_0-e',
         img_prefix=settings.TRAIN_IMG_DIR,
-        img_scale=(800, 512),
+        img_scale=[(1024, 640), (800, 512)],
         
         img_norm_cfg=img_norm_cfg,
         size_divisor=32,
@@ -214,7 +214,7 @@ data = dict(
         type=dataset_type,
         ann_file=data_root + '/detect/val.pkl',
         img_prefix=settings.VAL_IMG_DIR,
-        img_scale=(800, 512),
+        img_scale=[(1024, 640), (800, 512)],
         
         img_norm_cfg=img_norm_cfg,
         size_divisor=32,
@@ -226,7 +226,8 @@ data = dict(
         type=dataset_type,
         ann_file=data_root + '/detect/test.pkl',
         img_prefix=settings.TEST_IMG_DIR,
-        img_scale=(800, 512),
+        #img_scale=[(1024, 640), (800, 512)],
+        img_scale=(1024, 640),
         img_norm_cfg=img_norm_cfg,
         size_divisor=32,
         flip_ratio=0,
@@ -244,7 +245,7 @@ lr_config = dict(
     warmup_iters=200,
     warmup_ratio=1.0 / 3,
     #step=[1000, 4000, 8000],
-    step=[8000, 16000],
+    step=[4000, 8000],
     gamma=0.5,
     by_epoch=False)
 checkpoint_config = CheckpointHook(interval=500) #dict(interval=1)
@@ -260,7 +261,7 @@ log_config = dict(
 total_epochs = 15
 dist_params = dict(backend='nccl')
 log_level = 'INFO'
-work_dir = './work_dirs/rel_cas'
-load_from =  './work_dirs/rel_cas/latest.pth'
+work_dir = './work_dirs/cas_57_1024'
+load_from =  './work_dirs/cas_57_1024/latest.pth'
 resume_from = None
 workflow = [('train', 1)]

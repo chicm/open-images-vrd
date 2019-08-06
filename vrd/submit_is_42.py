@@ -4,7 +4,7 @@ import pandas as pd
 import pickle
 import argparse
 from tqdm import tqdm
-from vrd.utils import get_image_size
+from utils import get_image_size
 import settings
 
 def get_classes():
