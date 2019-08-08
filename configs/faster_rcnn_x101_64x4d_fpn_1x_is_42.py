@@ -155,7 +155,7 @@ data = dict(
         test_mode=True))
 # optimizer
 #optimizer = dict(type='SGD', lr=0.02, momentum=0.9, weight_decay=0.0001)
-optimizer = dict(type='Adam', lr=0.00006, weight_decay=0.0001)
+optimizer = dict(type='Adam', lr=0.000005, weight_decay=0.0001)
 optimizer_config = dict(grad_clip=dict(max_norm=35, norm_type=2))
 # learning policy
 lr_config = dict(
@@ -181,6 +181,6 @@ total_epochs = 12
 dist_params = dict(backend='nccl')
 log_level = 'INFO'
 work_dir = './work_dirs/faster_rcnn_x101_64x4d_fpn_1x_is_42'
-load_from = None
+load_from = './work_dirs/faster_rcnn_x101_64x4d_fpn_1x_is_42/latest.pth'
 resume_from = None
 workflow = [('train', 1)]
