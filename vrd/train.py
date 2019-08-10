@@ -223,7 +223,7 @@ def pred_model_output(model, loader, labeled=True):
             label1 = batch[1].cuda()
             if labeled:
                 labels.append(batch[2])
-            output = model(img)
+            output = model(img, label1)
 
             score, pred = output.max(1)
             scores.append(score.cpu())
