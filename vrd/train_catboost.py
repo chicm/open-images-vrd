@@ -175,8 +175,8 @@ def train(args):
         #custom_metric = ['Accuracy'],
         #eval_metric = ['Accuracy'],
 
-        iterations=1500, #2000,
-        learning_rate=0.05,
+        iterations=1000, #2000,
+        learning_rate=0.15,
         border_count=254,
         metric_period=10,
         #depth=5,

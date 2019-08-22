@@ -105,6 +105,18 @@ def parallel_apply(df, func, n_cores=24):
     pool.join()
     return df
 
+class CatBoostEnsembleModel:
+    def __init__(self, model_files):
+        self.model1 = CatBoostClassifier()
+        self.model2 = CatBoostClassifier()
+        self.model1.load_model('')
+        self.model2.load_model('')
+
+    def predict_proba(self, X, w=[0.7, 0.3]):
+        p1 = self.model1.predict_proba(X)
+        p2 = self.model2.predict_proba(X)
+        return p1*w[0] + p2*w[1]
+
 def submit(args):
     global model
     model = CatBoostClassifier() #task_type="GPU")
