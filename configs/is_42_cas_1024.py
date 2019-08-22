@@ -44,7 +44,7 @@ model = dict(
             in_channels=256,
             fc_out_channels=1024,
             roi_feat_size=7,
-            num_classes=58,
+            num_classes=43,
             target_means=[0., 0., 0., 0.],
             target_stds=[0.1, 0.1, 0.2, 0.2],
             reg_class_agnostic=True,
@@ -62,7 +62,7 @@ model = dict(
             in_channels=256,
             fc_out_channels=1024,
             roi_feat_size=7,
-            num_classes=58,
+            num_classes=43,
             target_means=[0., 0., 0., 0.],
             target_stds=[0.05, 0.05, 0.1, 0.1],
             reg_class_agnostic=True,
@@ -80,7 +80,7 @@ model = dict(
             in_channels=256,
             fc_out_channels=1024,
             roi_feat_size=7,
-            num_classes=58,
+            num_classes=43,
             target_means=[0., 0., 0., 0.],
             target_stds=[0.033, 0.033, 0.067, 0.067],
             reg_class_agnostic=True,
@@ -179,7 +179,7 @@ test_cfg = dict(
         score_thr=0.001, nms=dict(type='nms', iou_thr=0.5), max_per_img=100),
     keep_all_stages=False)
 # dataset settings
-dataset_type = 'RelationCustomDataset'
+dataset_type = 'RelationIs42CustomDataset'
 data_root = settings.ROOT_DIR
 
 img_norm_cfg = dict(
@@ -191,7 +191,7 @@ data = dict(
         type=dataset_type,
         ann_file=data_root + '/detect/train_0-e',
         img_prefix=settings.TRAIN_IMG_DIR,
-        img_scale=[(1024, 640), (800, 512)],
+        img_scale=[(1024,640), (800, 512)],
         
         img_norm_cfg=img_norm_cfg,
         size_divisor=32,
@@ -214,7 +214,7 @@ data = dict(
         type=dataset_type,
         ann_file=data_root + '/detect/val.pkl',
         img_prefix=settings.VAL_IMG_DIR,
-        img_scale=[(1024, 640), (800, 512)],
+        img_scale=[(1024,640),(800, 512)],
         
         img_norm_cfg=img_norm_cfg,
         size_divisor=32,
@@ -226,7 +226,6 @@ data = dict(
         type=dataset_type,
         ann_file=data_root + '/detect/test.pkl',
         img_prefix=settings.TEST_IMG_DIR,
-        #img_scale=[(1024, 640), (800, 512)],
         img_scale=(1024, 640),
         img_norm_cfg=img_norm_cfg,
         size_divisor=32,
@@ -236,7 +235,7 @@ data = dict(
         test_mode=True))
 # optimizer
 #optimizer = dict(type='SGD', lr=0.02, momentum=0.9, weight_decay=0.0001)
-optimizer = dict(type='Adam', lr=0.00002, weight_decay=0.0001)
+optimizer = dict(type='Adam', lr=0.00001, weight_decay=0.0001)
 optimizer_config = dict(grad_clip=dict(max_norm=35, norm_type=2))
 # learning policy
 lr_config = dict(
@@ -244,8 +243,8 @@ lr_config = dict(
     warmup='linear',
     warmup_iters=200,
     warmup_ratio=1.0 / 3,
-    #step=[1000, 4000, 8000],
-    step=[4000, 12000],
+    step=[1000, 1500],
+    #step=[80000],
     gamma=0.5,
     by_epoch=False)
 checkpoint_config = CheckpointHook(interval=500) #dict(interval=1)
@@ -258,10 +257,10 @@ log_config = dict(
     ])
 # yapf:enable
 # runtime settings
-total_epochs = 15
+total_epochs = 1
 dist_params = dict(backend='nccl')
 log_level = 'INFO'
-work_dir = './work_dirs/cas_57_1024'
-load_from =  './work_dirs/cas_57_1024/latest.pth'
+work_dir = './work_dirs/is_42_cas_1024'
+load_from =  './work_dirs/is_42_cas_1024/latest.pth'
 resume_from = None
 workflow = [('train', 1)]

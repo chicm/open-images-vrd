@@ -174,14 +174,18 @@ def train(args):
         custom_loss = ['Accuracy'],
         #custom_metric = ['Accuracy'],
         #eval_metric = ['Accuracy'],
-        iterations=2000,
+
+        iterations=1500, #2000,
+        learning_rate=0.05,
+        border_count=254,
         metric_period=10,
+        #depth=5,
         task_type="GPU",
         verbose=True
     )
+    #print(dir(model))
 
     #from_model = CatBoostClassifier()
-
     #from_model.load_model(args.model_file)
 
     model.fit(
