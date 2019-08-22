@@ -56,6 +56,7 @@ def fast_get_prediction_string(test_row):
     cur_x_test = cur_df.drop(['ImageID', 'confidence1', 'confidence2'], axis=1)
     pred_score = model.predict_proba(cur_x_test)
     pred_rel = model.predict(cur_x_test)
+    #pred_rel, pred_score = model.predict_with_proba(cur_x_test)
     
     
     cur_x_test['coef'] = 1 - pred_score[:, 5]
@@ -106,19 +107,27 @@ def parallel_apply(df, func, n_cores=24):
     return df
 
 class CatBoostEnsembleModel:
-    def __init__(self, model_files):
+    def __init__(self):
         self.model1 = CatBoostClassifier()
         self.model2 = CatBoostClassifier()
-        self.model1.load_model('')
-        self.model2.load_model('')
+        self.model1.load_model('lb23578/cat_154k_144_1000.model')
+        self.model2.load_model('lb22592/cat_0820_500_143.model')
+        print(self.model1.classes_)
 
-    def predict_proba(self, X, w=[0.7, 0.3]):
+    def predict_with_proba(self, X, w=[0.7, 0.3]):
         p1 = self.model1.predict_proba(X)
         p2 = self.model2.predict_proba(X)
-        return p1*w[0] + p2*w[1]
+        prob = p1*w[0] + p2*w[1]
+        idx = np.argmax(prob, axis=1)
+        assert len(idx) == len(prob)
+        labels = np.array(self.model1.classes_)[idx]
+        assert len(labels) == len(prob)
+
+        return labels, prob
 
 def submit(args):
     global model
+    #model = CatBoostEnsembleModel()
     model = CatBoostClassifier() #task_type="GPU")
     print('loading {}...'.format(args.model_file))
     model.load_model(args.model_file)
