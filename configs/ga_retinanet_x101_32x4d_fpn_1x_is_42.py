@@ -136,7 +136,7 @@ data = dict(
         with_label=False,
         test_mode=True))
 # optimizer
-optimizer = dict(type='Adam', lr=0.00002, weight_decay=0.0001)
+optimizer = dict(type='Adam', lr=0.00001, weight_decay=0.0001)
 optimizer_config = dict(grad_clip=dict(max_norm=35, norm_type=2))
 # learning policy
 lr_config = dict(
@@ -144,7 +144,7 @@ lr_config = dict(
     warmup='linear',
     warmup_iters=200,
     warmup_ratio=1.0 / 3,
-    step=[4000, 8000],
+    step=[1000, 1500],
     #step=[80000],
     gamma=0.5,
     by_epoch=False)
@@ -158,7 +158,7 @@ log_config = dict(
     ])
 # yapf:enable
 # runtime settings
-total_epochs = 12
+total_epochs = 1
 #device_ids = range(8)
 dist_params = dict(backend='nccl')
 log_level = 'INFO'
