@@ -118,8 +118,8 @@ def parallel_apply(df, func, n_cores=24):
     pool.join()
     return df
 
-#def add_features(df):
-    #df['iou'] = df.apply(lambda row: get_iou(row), axis=1) 
+def add_features(df):
+    df['iou'] = df.apply(lambda row: get_iou(row), axis=1) 
     #df['size1'] = df.apply(lambda row: (row.XMax1 - row.XMin1) * (row.YMax1 - row.YMin1), axis=1)
     #df['size2'] = df.apply(lambda row: (row.XMax2 - row.XMin2) * (row.YMax2 - row.YMin2), axis=1)
     #df['xcenter1'] = df.apply(lambda row: (row.XMax1 + row.XMin1) / 2, axis=1)
@@ -128,9 +128,9 @@ def parallel_apply(df, func, n_cores=24):
     #df['ycenter2'] = df.apply(lambda row: (row.YMax2 + row.YMin2) / 2, axis=1)
     #df['aspect1'] = df.apply(lambda row: (row.XMax1 - row.XMin1) / (row.YMax1 - row.YMin1 + 1e-6), axis=1)
     #df['aspect2'] = df.apply(lambda row: (row.XMax2 - row.XMin2) / (row.YMax2 - row.YMin2 + 1e-6), axis=1)
-    #df['xcenterdiff'] = df.apply(lambda row: ((row.XMax1 + row.XMin1) - (row.XMax2 + row.XMin2)) / 2, axis=1)
-    #df['ycenterdiff'] = df.apply(lambda row: ((row.YMax1 + row.YMin1) - (row.YMax2 + row.YMin2)) / 2, axis=1)
-    #return df
+    df['xcenterdiff'] = df.apply(lambda row: ((row.XMax1 + row.XMin1) - (row.XMax2 + row.XMin2)) / 2, axis=1)
+    df['ycenterdiff'] = df.apply(lambda row: ((row.YMax1 + row.YMin1) - (row.YMax2 + row.YMin2)) / 2, axis=1)
+    return df
 
 #img_files = glob.glob(settings.TRAIN_IMG_DIR + '/**/*.jpg')
 #fullpath_dict = {}
@@ -141,10 +141,10 @@ def parallel_apply(df, func, n_cores=24):
 #    w, h = get_image_size(fullpath_dict[row.ImageID])
 #    return w / h
 
-def add_features(df):
-    df['iou'] = df.apply(lambda row: get_iou(row), axis=1)
-    #df['ratio'] = df.apply(lambda row: get_img_ratio(row), axis=1)
-    return df
+#def add_features(df):
+#    df['iou'] = df.apply(lambda row: get_iou(row), axis=1)
+#    df['ratio'] = df.apply(lambda row: get_img_ratio(row), axis=1)
+#    return df
 
 def get_train_data(args):
     df_vrd = pd.read_csv(os.path.join(DATA_DIR, 'challenge-2019-train-vrd.csv'))

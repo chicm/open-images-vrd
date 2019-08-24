@@ -7,7 +7,7 @@ import math
 from multiprocessing import Pool
 from catboost import CatBoostClassifier
 from utils import get_iou
-from train_catboost import classes_1, classes_2
+from train_catboost import classes_1, classes_2, add_features, parallel_apply
 
 model = None
 
@@ -30,30 +30,34 @@ def fast_get_prediction_string(test_row):
             det1, det2 = dets[i], dets[j]
             if i != j and det1[0] in set(classes_1) and det2[0] in set(classes_2):
                 cur_test_dets.append({
-                    'ImageID': test_row.ImageId,
+                    #'ImageID': test_row.ImageId,
                     'LabelName1': det1[0],
                     'LabelName2': det2[0],
-                    'confidence1': float(det1[1]),
-                    'confidence2': float(det2[1]),
                     'XMin1': float(det1[2]),
-                    'YMin1': float(det1[3]),
                     'XMax1': float(det1[4]),
+                    'YMin1': float(det1[3]),
                     'YMax1': float(det1[5]),
                     'XMin2': float(det2[2]),
-                    'YMin2': float(det2[3]),
                     'XMax2': float(det2[4]),
-                    'YMax2': float(det2[5])
+                    'YMin2': float(det2[3]),
+                    'YMax2': float(det2[5]),
+                    'confidence1': float(det1[1]),
+                    'confidence2': float(det2[1]),
                 })
     
     if len(cur_test_dets) < 1:
         return ''
 
     cur_df = pd.DataFrame(cur_test_dets)
-    cur_df['iou'] = cur_df.apply(lambda row: get_iou(row), axis=1)
-    cur_df = cur_df[['ImageID', 'LabelName1', 'LabelName2', 'XMin1', 
-                   'XMax1', 'YMin1', 'YMax1', 'XMin2', 'XMax2', 'YMin2', 'YMax2', 'iou', 'confidence1', 'confidence2']]
+
+    cur_df = add_features(cur_df)
+    #cur_df['iou'] = cur_df.apply(lambda row: get_iou(row), axis=1)
+    #cur_df = cur_df[['ImageID', 'LabelName1', 'LabelName2', 'XMin1', 
+    #               'XMax1', 'YMin1', 'YMax1', 'XMin2', 'XMax2', 'YMin2', 'YMax2', 'iou', 'confidence1', 'confidence2']]
     #print(cur_df.head())
-    cur_x_test = cur_df.drop(['ImageID', 'confidence1', 'confidence2'], axis=1)
+    #cur_x_test = cur_df.drop(['ImageID', 'confidence1', 'confidence2'], axis=1)
+    cur_x_test = cur_df.drop(['confidence1', 'confidence2'], axis=1)
+    
     pred_score = model.predict_proba(cur_x_test)
     pred_rel = model.predict(cur_x_test)
     #pred_rel, pred_score = model.predict_with_proba(cur_x_test)
@@ -96,14 +100,6 @@ def get_det(pred_str):
 
 def add_pred_string(df):
     df['PredictionString'] = df.apply(lambda row: fast_get_prediction_string(row), axis=1)
-    return df
-
-def parallel_apply(df, func, n_cores=24):
-    df_split = np.array_split(df, n_cores)
-    pool = Pool(n_cores)
-    df = pd.concat(pool.map(func, df_split))
-    pool.close()
-    pool.join()
     return df
 
 class CatBoostEnsembleModel:
