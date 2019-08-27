@@ -214,14 +214,14 @@ data = dict(
         type=dataset_type,
         ann_file=data_root + '/detect/val.pkl',
         img_prefix=settings.VAL_IMG_DIR,
-        img_scale=[(1024,640),(800, 512)],
+        img_scale=(1024,640),
         
         img_norm_cfg=img_norm_cfg,
         size_divisor=32,
         flip_ratio=0,
         with_mask=False,
-        with_crowd=False,
-        with_label=True),
+        with_label=False,
+        test_mode=True),
     test=dict(
         type=dataset_type,
         ann_file=data_root + '/detect/test.pkl',
@@ -257,7 +257,7 @@ log_config = dict(
     ])
 # yapf:enable
 # runtime settings
-total_epochs = 1
+total_epochs = 5
 dist_params = dict(backend='nccl')
 log_level = 'INFO'
 work_dir = './work_dirs/is_42_cas_1024'

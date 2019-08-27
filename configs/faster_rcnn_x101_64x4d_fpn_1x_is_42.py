@@ -141,12 +141,13 @@ data = dict(
         flip_ratio=0,
         with_mask=False,
         with_crowd=False,
-        with_label=True),
+        with_label=False,
+        test_mode=True),
     test=dict(
         type=dataset_type,
         ann_file=data_root + 'test',
         img_prefix=settings.TEST_IMG_DIR,
-        img_scale=(1024, 6400),
+        img_scale=(1024, 640),
         img_norm_cfg=img_norm_cfg,
         size_divisor=32,
         flip_ratio=0,
@@ -155,7 +156,7 @@ data = dict(
         test_mode=True))
 # optimizer
 #optimizer = dict(type='SGD', lr=0.02, momentum=0.9, weight_decay=0.0001)
-optimizer = dict(type='Adam', lr=0.000005, weight_decay=0.0001)
+optimizer = dict(type='Adam', lr=0.00001, weight_decay=0.0001)
 optimizer_config = dict(grad_clip=dict(max_norm=35, norm_type=2))
 # learning policy
 lr_config = dict(
@@ -163,7 +164,7 @@ lr_config = dict(
     warmup='linear',
     warmup_iters=200,
     warmup_ratio=1.0 / 3,
-    step=[4000, 8000],
+    step=[2000, 4000],
     #step=[80000],
     gamma=0.5,
     by_epoch=False)
@@ -177,7 +178,7 @@ log_config = dict(
     ])
 # yapf:enable
 # runtime settings
-total_epochs = 12
+total_epochs = 4
 dist_params = dict(backend='nccl')
 log_level = 'INFO'
 work_dir = './work_dirs/faster_rcnn_x101_64x4d_fpn_1x_is_42'

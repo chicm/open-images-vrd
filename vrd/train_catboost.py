@@ -45,7 +45,7 @@ def get_neg_sample(group):
         return []
     used = set()
     result = []
-    for _ in range(10):
+    for _ in range(12):
         idx1 = random.choice(list(range(n)))
         idx2 = random.choice(list(range(n)))
         if (idx1 != idx2) and ((idx1, idx2) not in used):
@@ -70,7 +70,7 @@ def get_neg_sample(group):
                 })
                 #result.append((group.iloc[idx1], group.iloc[idx2]))
                 used.add((idx1, idx2))
-        if len(used) >= 5:
+        if len(used) >= 10:
             break
     #print(len(result))
     return result

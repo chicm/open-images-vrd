@@ -54,6 +54,56 @@ def get_pred_str(pred, w, h, classes):
     res = [str(x) for x in res]
     return ' '.join(res)
 
+def create_val_prediction(args):
+    with open(args.pred_file, 'rb') as f:
+        print('loading: ', args.pred_file)
+        preds = pickle.load(f)
+    df_test = pd.read_csv(os.path.join(settings.DATA_DIR, 'val_imgs.csv'))
+    img_dir = settings.VAL_IMG_DIR
+    print('getting image sizes')
+    df_test['h'] = df_test.ImageId.map(lambda x: get_image_size(os.path.join(img_dir, '{}.jpg'.format(x)))[1])
+    df_test['w'] = df_test.ImageId.map(lambda x: get_image_size(os.path.join(img_dir, '{}.jpg'.format(x)))[0])
+    print(df_test.head())
+
+    final_preds = []
+
+    for p in tqdm(preds, total=len(preds)):
+        final_preds.append(get_preds(p, args.th))
+    total_objs = 0
+    for p in final_preds:
+        total_objs += len(p['labels'])
+    print('total predicted objects:', total_objs)
+
+    classes, _ = get_classes()
+    res = []
+    for i, (img_id, p) in tqdm(enumerate(zip(df_test.ImageId.values, final_preds)), total=len(final_preds)):
+        h = df_test.iloc[i].h
+        w = df_test.iloc[i].w
+        #pred_strs.append(get_pred_str(p, w, h, classes))
+        for label, score, bbox in zip(p['labels'], p['scores'], p['bboxes']):
+            label1, label2 = classes[label].split(',')
+            det = {
+                'ImageID': img_id,
+                'LabelName1': label1,
+                'LabelName2': label2,
+                'XMin1': bbox[0]/w,
+                'YMin1': bbox[1]/h,
+                'XMax1': bbox[2]/w,
+                'YMax1': bbox[3]/h,
+                'XMin2': bbox[0]/w,
+                'YMin2': bbox[1]/h,
+                'XMax2': bbox[2]/w,
+                'YMax2': bbox[3]/h,
+                'RelationshipLabel': 'is',
+                'Score': score
+            }
+            res.append(det)
+
+    #df_test['PredictionString'] = pred_strs
+    df_val = pd.DataFrame(res)
+    print(df_val.head())
+    df_val.to_csv(args.out, index=False)
+    print('done')
 
 def create_submit(args):
     with open(args.pred_file, 'rb') as f:
@@ -61,9 +111,10 @@ def create_submit(args):
         preds = pickle.load(f)
 
     df_test = pd.read_csv(os.path.join(settings.DATA_DIR, 'VRD_sample_submission.csv'))
+    img_dir = settings.TEST_IMG_DIR
     print('getting image sizes')
-    df_test['h'] = df_test.ImageId.map(lambda x: get_image_size(os.path.join(settings.TEST_IMG_DIR, '{}.jpg'.format(x)))[1])
-    df_test['w'] = df_test.ImageId.map(lambda x: get_image_size(os.path.join(settings.TEST_IMG_DIR, '{}.jpg'.format(x)))[0])
+    df_test['h'] = df_test.ImageId.map(lambda x: get_image_size(os.path.join(img_dir, '{}.jpg'.format(x)))[1])
+    df_test['w'] = df_test.ImageId.map(lambda x: get_image_size(os.path.join(img_dir, '{}.jpg'.format(x)))[0])
     print(df_test.head())
 
     final_preds = []
@@ -82,7 +133,7 @@ def create_submit(args):
         h = df_test.iloc[i].h
         w = df_test.iloc[i].w
         pred_strs.append(get_pred_str(p, w, h, classes))
-    df_test.PredictionString = pred_strs
+    df_test['PredictionString'] = pred_strs
     print(df_test.head())
     df_test.to_csv(args.out, index=False, columns=['ImageId', 'PredictionString'])
     print('done')
@@ -92,7 +143,11 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='create submission from pred file')
     parser.add_argument('--pred_file', type=str, required=True)
     parser.add_argument('--out', type=str, required=True)
+    parser.add_argument('--val', action='store_true')
     parser.add_argument('--th', type=float, default=0.)
     args = parser.parse_args()
 
-    create_submit(args)
+    if args.val:
+        create_val_prediction(args)
+    else:
+        create_submit(args)
