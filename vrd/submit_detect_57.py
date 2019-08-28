@@ -37,15 +37,15 @@ def get_pred_str(pred, w, h, classes):
     res = [str(x) for x in res]
     return ' '.join(res)
 
-def create_submit(args):
+def create_submit(args, img_list_file='VRD_sample_submission.csv', img_dir=settings.TEST_IMG_DIR):
     with open(args.pred_file, 'rb') as f:
         print('loading: ', args.pred_file)
         preds = pickle.load(f)
 
-    df_test = pd.read_csv(os.path.join(settings.DATA_DIR, 'VRD_sample_submission.csv'))
+    df_test = pd.read_csv(os.path.join(settings.DATA_DIR, img_list_file))
     print('getting image sizes')
-    df_test['h'] = df_test.ImageId.map(lambda x: get_image_size(os.path.join(settings.TEST_IMG_DIR, '{}.jpg'.format(x)))[1])
-    df_test['w'] = df_test.ImageId.map(lambda x: get_image_size(os.path.join(settings.TEST_IMG_DIR, '{}.jpg'.format(x)))[0])
+    df_test['h'] = df_test.ImageId.map(lambda x: get_image_size(os.path.join(img_dir, '{}.jpg'.format(x)))[1])
+    df_test['w'] = df_test.ImageId.map(lambda x: get_image_size(os.path.join(img_dir, '{}.jpg'.format(x)))[0])
     print(df_test.head())
 
     final_preds = []
@@ -63,17 +63,30 @@ def create_submit(args):
         h = df_test.iloc[i].h
         w = df_test.iloc[i].w
         pred_strs.append(get_pred_str(p, w, h, classes))
-    df_test.PredictionString = pred_strs
+    df_test['PredictionString'] = pred_strs
     print(df_test.head())
     df_test.to_csv(args.out, index=False, columns=['ImageId', 'PredictionString'])
     print('done')
 
+def create_val_submission(args):
+    create_submit(args, img_list_file='val_imgs.csv', img_dir=settings.VAL_IMG_DIR)
+
+def create_val_prediction(args):
+    #TODO
+    pass
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='create submission from pred file')
     parser.add_argument('--pred_file', type=str, required=True)
+    parser.add_argument('--val_sub', action='store_true')
+    parser.add_argument('--val_preds', action='store_true')
     parser.add_argument('--out', type=str, required=True)
     parser.add_argument('--th', type=float, default=0.)
     args = parser.parse_args()
 
-    create_submit(args)
+    if args.val_sub:
+        create_val_submission(args)
+    elif args.val_preds:
+        create_val_prediction(args)
+    else:
+        create_submit(args)

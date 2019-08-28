@@ -11,6 +11,13 @@ from train_catboost import classes_1, classes_2, add_features, parallel_apply
 
 model = None
 
+hits_classes = set([
+    '/m/04yx4,/m/01226z', '/m/01bl7v,/m/01226z', '/m/03bt1vf,/m/01226z',
+    '/m/05r655,/m/01226z', '/m/04yx4,/m/0wdt60w', '/m/04yx4,/m/05ctyq',
+    '/m/03bt1vf,/m/05ctyq', '/m/05r655,/m/05ctyq'
+    ])
+
+
 def get_sort_score(row):
     return math.sqrt(row.confidence1 * row.confidence2) * row.coef
 
@@ -28,7 +35,7 @@ def fast_get_prediction_string(test_row):
     for i in range(len(dets)):
         for j in range(len(dets)):
             det1, det2 = dets[i], dets[j]
-            if i != j and det1[0] in set(classes_1) and det2[0] in set(classes_2):
+            if i != j and ','.join([det1[0], det2[0]]) in hits_classes:  #det1[0] in set(classes_1) and det2[0] in set(classes_2):
                 cur_test_dets.append({
                     #'ImageID': test_row.ImageId,
                     'LabelName1': det1[0],
@@ -66,12 +73,12 @@ def fast_get_prediction_string(test_row):
     cur_x_test['coef'] = 1 - pred_score[:, 5]
     cur_x_test['confidence1'] = cur_df['confidence1']
     cur_x_test['confidence2'] = cur_df['confidence2']
-    cur_x_test['RelationshipLabel'] = pred_rel
+    cur_x_test['RelationshipLabel'] = 'hits'
     cur_x_test['sort_score'] = cur_x_test.apply(lambda row: get_sort_score(row), axis=1)
     
-    cur_x_test = cur_x_test.loc[cur_x_test.RelationshipLabel != 'none'].copy()
+    #cur_x_test = cur_x_test.loc[cur_x_test.RelationshipLabel != 'none'].copy()
 
-    cur_x_test = cur_x_test.nlargest(200, 'sort_score').copy()
+    cur_x_test = cur_x_test.nlargest(20, 'sort_score').copy()
     #cur_x_test.sort_values(by='sort_score', axis=0, ascending=False, inplace=False, kind='quicksort')
     #cur_x_test = cur_x_test[:200].copy()
 

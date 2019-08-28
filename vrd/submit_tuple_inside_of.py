@@ -7,7 +7,7 @@ import math
 from multiprocessing import Pool
 from catboost import CatBoostClassifier
 from utils import get_iou
-from train_catboost import classes_1, classes_2, add_features, parallel_apply
+from train_inside_of import classes_1, classes_2, classes, add_features, parallel_apply
 
 model = None
 
@@ -28,7 +28,7 @@ def fast_get_prediction_string(test_row):
     for i in range(len(dets)):
         for j in range(len(dets)):
             det1, det2 = dets[i], dets[j]
-            if i != j and det1[0] in set(classes_1) and det2[0] in set(classes_2):
+            if i != j and ','.join([det1[0], det2[0]]) in classes:
                 cur_test_dets.append({
                     #'ImageID': test_row.ImageId,
                     'LabelName1': det1[0],
@@ -51,27 +51,21 @@ def fast_get_prediction_string(test_row):
     cur_df = pd.DataFrame(cur_test_dets)
 
     cur_df = add_features(cur_df)
-    #cur_df['iou'] = cur_df.apply(lambda row: get_iou(row), axis=1)
-    #cur_df = cur_df[['ImageID', 'LabelName1', 'LabelName2', 'XMin1', 
-    #               'XMax1', 'YMin1', 'YMax1', 'XMin2', 'XMax2', 'YMin2', 'YMax2', 'iou', 'confidence1', 'confidence2']]
-    #print(cur_df.head())
-    #cur_x_test = cur_df.drop(['ImageID', 'confidence1', 'confidence2'], axis=1)
     cur_x_test = cur_df.drop(['confidence1', 'confidence2'], axis=1)
     
     pred_score = model.predict_proba(cur_x_test)
     pred_rel = model.predict(cur_x_test)
-    #pred_rel, pred_score = model.predict_with_proba(cur_x_test)
-    
-    
-    cur_x_test['coef'] = 1 - pred_score[:, 5]
+
+    #cur_x_test['coef'] = 1 - pred_score[:, 5]
+    cur_x_test['coef'] = pred_score[:, 1]
     cur_x_test['confidence1'] = cur_df['confidence1']
     cur_x_test['confidence2'] = cur_df['confidence2']
-    cur_x_test['RelationshipLabel'] = pred_rel
+    cur_x_test['RelationshipLabel'] = pd.Series(pred_rel).map(lambda x: 'inside_of' if x == 1 else 'none')
     cur_x_test['sort_score'] = cur_x_test.apply(lambda row: get_sort_score(row), axis=1)
     
     cur_x_test = cur_x_test.loc[cur_x_test.RelationshipLabel != 'none'].copy()
 
-    cur_x_test = cur_x_test.nlargest(200, 'sort_score').copy()
+    cur_x_test = cur_x_test.nlargest(20, 'sort_score').copy()
     #cur_x_test.sort_values(by='sort_score', axis=0, ascending=False, inplace=False, kind='quicksort')
     #cur_x_test = cur_x_test[:200].copy()
 
