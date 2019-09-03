@@ -7,7 +7,7 @@ import math
 from multiprocessing import Pool
 from catboost import CatBoostClassifier
 from utils import get_iou
-from train_hits import classes_1, classes_2, classes, add_features, parallel_apply
+from train_under import classes_1, classes_2, classes, add_features, parallel_apply
 
 model = None
 
@@ -15,7 +15,7 @@ def get_sort_score(row):
     return math.sqrt(row.confidence1 * row.confidence2) * row.coef
 
 def get_pred_str(row):
-    conf = round(row.sort_score,6)
+    conf = round(row.sort_score,6) / 100
     rel = [conf, row.LabelName1, row.XMin1, row.YMin1, row.XMax1, row.YMax1,
                row.LabelName2, row.XMin2, row.YMin2, row.XMax2, row.YMax2, row.RelationshipLabel]
     rel = [str(x) for x in rel]
@@ -29,7 +29,6 @@ def fast_get_prediction_string(test_row):
         for j in range(len(dets)):
             det1, det2 = dets[i], dets[j]
             if i != j and ','.join([det1[0], det2[0]]) in classes:
-            #if i != j and det1[0] in classes_1 and det2[0] in classes_2:
                 cur_test_dets.append({
                     #'ImageID': test_row.ImageId,
                     'LabelName1': det1[0],
@@ -58,15 +57,15 @@ def fast_get_prediction_string(test_row):
     pred_rel = model.predict(cur_x_test)
 
     #cur_x_test['coef'] = 1 - pred_score[:, 5]
-    cur_x_test['coef'] = pred_score[:, 1]
+    cur_x_test['coef'] = pred_score[:, 1] * 100
     cur_x_test['confidence1'] = cur_df['confidence1']
     cur_x_test['confidence2'] = cur_df['confidence2']
-    cur_x_test['RelationshipLabel'] = pd.Series(pred_rel).map(lambda x: 'hits' if x == 1 else 'none')
+    cur_x_test['RelationshipLabel'] = pd.Series(pred_rel).map(lambda x: 'under' if x == 1 else 'none')
     cur_x_test['sort_score'] = cur_x_test.apply(lambda row: get_sort_score(row), axis=1)
     
     cur_x_test = cur_x_test.loc[cur_x_test.RelationshipLabel != 'none'].copy()
 
-    cur_x_test = cur_x_test.nlargest(50, 'sort_score').copy()
+    cur_x_test = cur_x_test.nlargest(20, 'sort_score').copy()
     #cur_x_test.sort_values(by='sort_score', axis=0, ascending=False, inplace=False, kind='quicksort')
     #cur_x_test = cur_x_test[:200].copy()
 
@@ -96,6 +95,25 @@ def get_det(pred_str):
 def add_pred_string(df):
     df['PredictionString'] = df.apply(lambda row: fast_get_prediction_string(row), axis=1)
     return df
+
+class CatBoostEnsembleModel:
+    def __init__(self):
+        self.model1 = CatBoostClassifier()
+        self.model2 = CatBoostClassifier()
+        self.model1.load_model('lb23578/cat_154k_144_1000.model')
+        self.model2.load_model('lb22592/cat_0820_500_143.model')
+        print(self.model1.classes_)
+
+    def predict_with_proba(self, X, w=[0.7, 0.3]):
+        p1 = self.model1.predict_proba(X)
+        p2 = self.model2.predict_proba(X)
+        prob = p1*w[0] + p2*w[1]
+        idx = np.argmax(prob, axis=1)
+        assert len(idx) == len(prob)
+        labels = np.array(self.model1.classes_)[idx]
+        assert len(labels) == len(prob)
+
+        return labels, prob
 
 def submit(args):
     global model

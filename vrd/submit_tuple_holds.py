@@ -7,12 +7,13 @@ import math
 from multiprocessing import Pool
 from catboost import CatBoostClassifier
 from utils import get_iou
-from train_hits import classes_1, classes_2, classes, add_features, parallel_apply
+from train_holds import classes_1, classes_2, add_features, parallel_apply
 
 model = None
 
 def get_sort_score(row):
     return math.sqrt(row.confidence1 * row.confidence2) * row.coef
+    #return math.sqrt(row.confidence1 * row.confidence2) * 0.5 + row.coef * 0.5
 
 def get_pred_str(row):
     conf = round(row.sort_score,6)
@@ -28,8 +29,8 @@ def fast_get_prediction_string(test_row):
     for i in range(len(dets)):
         for j in range(len(dets)):
             det1, det2 = dets[i], dets[j]
-            if i != j and ','.join([det1[0], det2[0]]) in classes:
-            #if i != j and det1[0] in classes_1 and det2[0] in classes_2:
+            #if i != j and ','.join([det1[0], det2[0]]) in classes:
+            if i != j and det1[0] in classes_1 and det2[0] in classes_2:
                 cur_test_dets.append({
                     #'ImageID': test_row.ImageId,
                     'LabelName1': det1[0],
@@ -61,7 +62,7 @@ def fast_get_prediction_string(test_row):
     cur_x_test['coef'] = pred_score[:, 1]
     cur_x_test['confidence1'] = cur_df['confidence1']
     cur_x_test['confidence2'] = cur_df['confidence2']
-    cur_x_test['RelationshipLabel'] = pd.Series(pred_rel).map(lambda x: 'hits' if x == 1 else 'none')
+    cur_x_test['RelationshipLabel'] = pd.Series(pred_rel).map(lambda x: 'holds' if x == 1 else 'none')
     cur_x_test['sort_score'] = cur_x_test.apply(lambda row: get_sort_score(row), axis=1)
     
     cur_x_test = cur_x_test.loc[cur_x_test.RelationshipLabel != 'none'].copy()
