@@ -145,8 +145,8 @@ def parallel_apply(df, func, n_cores=24):
 
 def add_features(df):
     df['iou'] = df.apply(lambda row: get_iou(row), axis=1) 
-    df['size1'] = df.apply(lambda row: (row.XMax1 - row.XMin1) * (row.YMax1 - row.YMin1), axis=1)
-    df['size2'] = df.apply(lambda row: (row.XMax2 - row.XMin2) * (row.YMax2 - row.YMin2), axis=1)
+    #df['size1'] = df.apply(lambda row: (row.XMax1 - row.XMin1) * (row.YMax1 - row.YMin1), axis=1)
+    #df['size2'] = df.apply(lambda row: (row.XMax2 - row.XMin2) * (row.YMax2 - row.YMin2), axis=1)
     #df['xcenter1'] = df.apply(lambda row: (row.XMax1 + row.XMin1) / 2, axis=1)
     #df['xcenter2'] = df.apply(lambda row: (row.XMax2 + row.XMin2) / 2, axis=1)
     #df['ycenter1'] = df.apply(lambda row: (row.YMax1 + row.YMin1) / 2, axis=1)
@@ -178,7 +178,7 @@ def get_train_data(args):
     df_pos.RelationshipLabel = 1
     print(df_pos.head())
 
-    df_neg = shuffle(pd.read_csv(args.neg_sample_fn)).iloc[:25000]
+    df_neg = shuffle(pd.read_csv(args.neg_sample_fn)).iloc[:100000]
     df_neg.RelationshipLabel = 0
     #df_neg.iloc[0].RelationshipLabel = 'xxx'
     print(df_neg.head())
@@ -209,7 +209,7 @@ def train(args):
         #eval_metric = ['Accuracy'],
 
         iterations=1000, #2000,
-        learning_rate=0.1,
+        learning_rate=0.13,
         border_count=254,
         metric_period=10,
         #depth=5,

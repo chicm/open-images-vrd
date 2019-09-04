@@ -20,8 +20,8 @@ from utils import get_iou, get_image_size
 import settings
 DATA_DIR = settings.DATA_DIR
 
-classes_1 = set(['/m/04yx4', '/m/03bt1vf', '/m/01bl7v', '/m/05r655'])
-classes_2 = set(['/m/0342h', '/m/07y_7', '/m/026t6', '/m/05r5c', '/m/0l14j_'])
+classes_1 = set(['/m/01bl7v', '/m/04yx4', '/m/05r655', '/m/03bt1vf'])
+classes_2 = set(['/m/0bt9lr', '/m/03k3r', '/m/01yrx', '/m/0bwd_0j', '/m/08pbxl', '/m/078jl', '/m/02hj4', '/m/03qrc'])
 
 
 def get_neg_sample(group):
@@ -31,7 +31,7 @@ def get_neg_sample(group):
         return []
     used = set()
     result = []
-    for _ in range(100):
+    for _ in range(50):
         idx1 = random.choice(list(range(n)))
         idx2 = random.choice(list(range(n)))
         if (idx1 != idx2) and ((idx1, idx2) not in used):
@@ -65,12 +65,12 @@ def get_neg_sample(group):
 def create_train_data(args):
     df_box = pd.read_csv(os.path.join(DATA_DIR, 'challenge-2019-train-vrd-bbox.csv'))
     df_vrd = pd.read_csv(os.path.join(DATA_DIR, 'challenge-2019-train-vrd.csv'))
-    df_pos = df_vrd.loc[df_vrd.RelationshipLabel=='plays'].copy()
+    df_pos = df_vrd.loc[df_vrd.RelationshipLabel=='interacts_with'].copy()
     #df_pos.RelationshipLabel.value_counts()
     #classes_1 = df_pos.LabelName1.unique()
     #classes_2 = df_pos.LabelName2.unique()
     print('num box images:', len(df_box.ImageID.unique()))
-    print('num plays images:', len(df_vrd.loc[df_vrd.RelationshipLabel=='plays'].ImageID.unique()))
+    print('num plays images:', len(df_vrd.loc[df_vrd.RelationshipLabel=='interacts_with'].ImageID.unique()))
     print('num pos samples:', len(df_pos))
     print('num vrd images:', len(df_vrd.ImageID.unique()))
 
@@ -112,12 +112,12 @@ def parallel_apply(df, func, n_cores=24):
 
 def add_features(df):
     df['iou'] = df.apply(lambda row: get_iou(row), axis=1) 
-    df['size1'] = df.apply(lambda row: (row.XMax1 - row.XMin1) * (row.YMax1 - row.YMin1), axis=1)
-    df['size2'] = df.apply(lambda row: (row.XMax2 - row.XMin2) * (row.YMax2 - row.YMin2), axis=1)
-    #df['xcenter1'] = df.apply(lambda row: (row.XMax1 + row.XMin1) / 2, axis=1)
-    #df['xcenter2'] = df.apply(lambda row: (row.XMax2 + row.XMin2) / 2, axis=1)
-    #df['ycenter1'] = df.apply(lambda row: (row.YMax1 + row.YMin1) / 2, axis=1)
-    #df['ycenter2'] = df.apply(lambda row: (row.YMax2 + row.YMin2) / 2, axis=1)
+    #df['size1'] = df.apply(lambda row: (row.XMax1 - row.XMin1) * (row.YMax1 - row.YMin1), axis=1)
+    #df['size2'] = df.apply(lambda row: (row.XMax2 - row.XMin2) * (row.YMax2 - row.YMin2), axis=1)
+    df['xcenter1'] = df.apply(lambda row: (row.XMax1 + row.XMin1) / 2, axis=1)
+    df['xcenter2'] = df.apply(lambda row: (row.XMax2 + row.XMin2) / 2, axis=1)
+    df['ycenter1'] = df.apply(lambda row: (row.YMax1 + row.YMin1) / 2, axis=1)
+    df['ycenter2'] = df.apply(lambda row: (row.YMax2 + row.YMin2) / 2, axis=1)
     #df['aspect1'] = df.apply(lambda row: (row.XMax1 - row.XMin1) / (row.YMax1 - row.YMin1 + 1e-6), axis=1)
     #df['aspect2'] = df.apply(lambda row: (row.XMax2 - row.XMin2) / (row.YMax2 - row.YMin2 + 1e-6), axis=1)
     df['xcenterdiff'] = df.apply(lambda row: ((row.XMax1 + row.XMin1) - (row.XMax2 + row.XMin2)) / 2, axis=1)
@@ -140,12 +140,12 @@ def add_features(df):
 
 def get_train_data(args):
     df_vrd = pd.read_csv(os.path.join(DATA_DIR, 'challenge-2019-train-vrd.csv'))
-    df_pos = df_vrd.loc[df_vrd.RelationshipLabel=='plays'].copy()
+    df_pos = df_vrd.loc[df_vrd.RelationshipLabel=='interacts_with'].copy()
     #df_pos = df_vrd.loc[df_vrd.RelationshipLabel!='is'].copy()
     df_pos.RelationshipLabel = 1
     print(df_pos.head())
 
-    df_neg = pd.read_csv(args.neg_sample_fn)
+    df_neg = shuffle(pd.read_csv(args.neg_sample_fn)).iloc[:4000]
     df_neg.RelationshipLabel = 0
     #df_neg.iloc[0].RelationshipLabel = 'xxx'
     print(df_neg.head())
@@ -175,8 +175,8 @@ def train(args):
         #custom_metric = ['Accuracy'],
         #eval_metric = ['Accuracy'],
 
-        iterations=1000, #2000,
-        learning_rate=0.1,
+        iterations=500, #2000,
+        #learning_rate=0.1,
         border_count=254,
         metric_period=10,
         #depth=5,
@@ -217,10 +217,10 @@ def test_model():
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='catboost model')
-    parser.add_argument('--generate', type=str, default='plays/df_neg.csv')
+    parser.add_argument('--generate', type=str, default='interacts_with/df_neg.csv')
     parser.add_argument('--train', action='store_true')
     parser.add_argument('--neg_sample_fn', type=str, default=None)
-    parser.add_argument('--model_file', type=str, default='plays/cat.model')
+    parser.add_argument('--model_file', type=str, default='interacts_with/cat.model')
 
     args = parser.parse_args()
     print(args)

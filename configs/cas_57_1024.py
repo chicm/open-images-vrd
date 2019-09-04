@@ -214,7 +214,7 @@ data = dict(
         type=dataset_type,
         ann_file=data_root + '/detect/val.pkl',
         img_prefix=settings.VAL_IMG_DIR,
-        img_scale=[(1024, 640), (800, 512)],
+        img_scale=(1024, 640),
         
         img_norm_cfg=img_norm_cfg,
         size_divisor=32,
