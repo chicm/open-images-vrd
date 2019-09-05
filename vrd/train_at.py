@@ -29,36 +29,33 @@ def get_neg_sample(group):
     n = len(group.LabelName.values)
     if n < 2:
         return []
-    used = set()
     result = []
-    for _ in range(100):
-        idx1 = random.choice(list(range(n)))
-        idx2 = random.choice(list(range(n)))
-        if (idx1 != idx2) and ((idx1, idx2) not in used):
-            row1 = group.iloc[idx1]
-            row2 = group.iloc[idx2]
-            label_name1 = row1.LabelName
-            label_name2 = row2.LabelName
-            if label_name1 in set(classes_1) and label_name2 in set(classes_2):
-            #if ','.join([label_name1, label_name2]) in classes:
-                result.append({
-                    'ImageID': img_id,
-                    'LabelName1': label_name1,
-                    'LabelName2': label_name2,
-                    'XMin1': row1.XMin,
-                    'XMax1': row1.XMax,
-                    'YMin1': row1.YMin,
-                    'YMax1': row1.YMax,
-                    'XMin2': row2.XMin,
-                    'XMax2': row2.XMax,
-                    'YMin2': row2.YMin,
-                    'YMax2': row2.YMax,
-                    'RelationshipLabel': 'none'
-                })
-                #result.append((group.iloc[idx1], group.iloc[idx2]))
-                used.add((idx1, idx2))
-        if len(used) >= 20:
-            break
+    max_sample_per_img = 100
+
+    rows_c1 = [group.iloc[i] for i in range(group.shape[0]) if group.iloc[i].LabelName in classes_1]
+    rows_c2 = [group.iloc[i] for i in range(group.shape[0]) if group.iloc[i].LabelName in classes_2]
+
+    if len(rows_c1) < 1 or len(rows_c2) < 1:
+        return []
+
+    for row1 in rows_c1:
+        for row2 in rows_c2:
+            if len(result) >= max_sample_per_img:
+                return result
+            result.append({
+                'ImageID': img_id,
+                'LabelName1': row1.LabelName,
+                'LabelName2': row2.LabelName,
+                'XMin1': row1.XMin,
+                'XMax1': row1.XMax,
+                'YMin1': row1.YMin,
+                'YMax1': row1.YMax,
+                'XMin2': row2.XMin,
+                'XMax2': row2.XMax,
+                'YMin2': row2.YMin,
+                'YMax2': row2.YMax,
+                'RelationshipLabel': 'none'
+            })
     #print(len(result))
     return result
 
@@ -70,7 +67,7 @@ def create_train_data(args):
     #classes_1 = df_pos.LabelName1.unique()
     #classes_2 = df_pos.LabelName2.unique()
     print('num box images:', len(df_box.ImageID.unique()))
-    print('num plays images:', len(df_vrd.loc[df_vrd.RelationshipLabel=='at'].ImageID.unique()))
+    print('num at images:', len(df_vrd.loc[df_vrd.RelationshipLabel=='at'].ImageID.unique()))
     print('num pos samples:', len(df_pos))
     print('num vrd images:', len(df_vrd.ImageID.unique()))
 
