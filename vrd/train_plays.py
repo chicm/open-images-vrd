@@ -23,42 +23,38 @@ DATA_DIR = settings.DATA_DIR
 classes_1 = set(['/m/04yx4', '/m/03bt1vf', '/m/01bl7v', '/m/05r655'])
 classes_2 = set(['/m/0342h', '/m/07y_7', '/m/026t6', '/m/05r5c', '/m/0l14j_'])
 
-
 def get_neg_sample(group):
     img_id, group = group
     n = len(group.LabelName.values)
     if n < 2:
         return []
-    used = set()
     result = []
-    for _ in range(100):
-        idx1 = random.choice(list(range(n)))
-        idx2 = random.choice(list(range(n)))
-        if (idx1 != idx2) and ((idx1, idx2) not in used):
-            row1 = group.iloc[idx1]
-            row2 = group.iloc[idx2]
-            label_name1 = row1.LabelName
-            label_name2 = row2.LabelName
-            if label_name1 in set(classes_1) and label_name2 in set(classes_2):
-            #if ','.join([label_name1, label_name2]) in classes:
-                result.append({
-                    'ImageID': img_id,
-                    'LabelName1': label_name1,
-                    'LabelName2': label_name2,
-                    'XMin1': row1.XMin,
-                    'XMax1': row1.XMax,
-                    'YMin1': row1.YMin,
-                    'YMax1': row1.YMax,
-                    'XMin2': row2.XMin,
-                    'XMax2': row2.XMax,
-                    'YMin2': row2.YMin,
-                    'YMax2': row2.YMax,
-                    'RelationshipLabel': 'none'
-                })
-                #result.append((group.iloc[idx1], group.iloc[idx2]))
-                used.add((idx1, idx2))
-        if len(used) >= 20:
-            break
+    max_sample_per_img = 100000
+
+    rows_c1 = [group.iloc[i] for i in range(group.shape[0]) if group.iloc[i].LabelName in classes_1]
+    rows_c2 = [group.iloc[i] for i in range(group.shape[0]) if group.iloc[i].LabelName in classes_2]
+
+    if len(rows_c1) < 1 or len(rows_c2) < 1:
+        return []
+
+    for row1 in rows_c1:
+        for row2 in rows_c2:
+            if len(result) >= max_sample_per_img:
+                return result
+            result.append({
+                'ImageID': img_id,
+                'LabelName1': row1.LabelName,
+                'LabelName2': row2.LabelName,
+                'XMin1': row1.XMin,
+                'XMax1': row1.XMax,
+                'YMin1': row1.YMin,
+                'YMax1': row1.YMax,
+                'XMin2': row2.XMin,
+                'XMax2': row2.XMax,
+                'YMin2': row2.YMin,
+                'YMax2': row2.YMax,
+                'RelationshipLabel': 'none'
+            })
     #print(len(result))
     return result
 
