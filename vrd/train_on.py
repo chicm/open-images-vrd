@@ -208,7 +208,7 @@ def train(args):
         #eval_metric = ['Accuracy'],
 
         iterations=1000, #2000,
-        learning_rate=0.13,
+        learning_rate=0.1,
         border_count=254,
         metric_period=10,
         #depth=5,

@@ -151,7 +151,7 @@ def get_train_data(args):
     df_pos.RelationshipLabel = 1
     print(df_pos.head())
 
-    df_neg = shuffle(pd.read_csv(args.neg_sample_fn)).iloc[:40000]
+    df_neg = shuffle(pd.read_csv(args.neg_sample_fn))#.iloc[:40000]
     df_neg.RelationshipLabel = 0
     #df_neg.iloc[0].RelationshipLabel = 'xxx'
     print(df_neg.head())
@@ -182,7 +182,7 @@ def train(args):
         #eval_metric = ['Accuracy'],
 
         iterations=1000, #2000,
-        learning_rate=0.15,
+        learning_rate=0.1,
         border_count=254,
         metric_period=10,
         #depth=5,
