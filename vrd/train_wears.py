@@ -71,22 +71,24 @@ def get_neg_sample(group):
     n = len(group.LabelName.values)
     if n < 2:
         return []
-    used = set()
     result = []
-    for _ in range(12):
-        idx1 = random.choice(list(range(n)))
-        idx2 = random.choice(list(range(n)))
-        if (idx1 != idx2) and ((idx1, idx2) not in used):
-            row1 = group.iloc[idx1]
-            row2 = group.iloc[idx2]
-            label_name1 = row1.LabelName
-            label_name2 = row2.LabelName
-            #if label_name1 in set(classes_1) and label_name2 in set(classes_2):
-            if ','.join([label_name1, label_name2]) in classes:
+    max_sample_per_img = 100
+
+    rows_c1 = [group.iloc[i] for i in range(group.shape[0]) if group.iloc[i].LabelName in classes_1]
+    rows_c2 = [group.iloc[i] for i in range(group.shape[0]) if group.iloc[i].LabelName in classes_2]
+
+    if len(rows_c1) < 1 or len(rows_c2) < 1:
+        return []
+
+    for row1 in rows_c1:
+        for row2 in rows_c2:
+            if len(result) >= max_sample_per_img:
+                return result
+            if ','.join([row1.LabelName, row2.LabelName]) in classes:
                 result.append({
                     'ImageID': img_id,
-                    'LabelName1': label_name1,
-                    'LabelName2': label_name2,
+                    'LabelName1': row1.LabelName,
+                    'LabelName2': row2.LabelName,
                     'XMin1': row1.XMin,
                     'XMax1': row1.XMax,
                     'YMin1': row1.YMin,
@@ -97,10 +99,6 @@ def get_neg_sample(group):
                     'YMax2': row2.YMax,
                     'RelationshipLabel': 'none'
                 })
-                #result.append((group.iloc[idx1], group.iloc[idx2]))
-                used.add((idx1, idx2))
-        if len(used) >= 10:
-            break
     #print(len(result))
     return result
 
@@ -155,14 +153,14 @@ def parallel_apply(df, func, n_cores=24):
 def add_features(df):
     df['iou'] = df.apply(lambda row: get_iou(row), axis=1) 
     df['coveriou'] = df.apply(lambda row: get_cover_iou(row), axis=1) 
-    #df['size1'] = df.apply(lambda row: (row.XMax1 - row.XMin1) * (row.YMax1 - row.YMin1), axis=1)
-    #df['size2'] = df.apply(lambda row: (row.XMax2 - row.XMin2) * (row.YMax2 - row.YMin2), axis=1)
-    #df['xcenter1'] = df.apply(lambda row: (row.XMax1 + row.XMin1) / 2, axis=1)
-    #df['xcenter2'] = df.apply(lambda row: (row.XMax2 + row.XMin2) / 2, axis=1)
-    #df['ycenter1'] = df.apply(lambda row: (row.YMax1 + row.YMin1) / 2, axis=1)
-    #df['ycenter2'] = df.apply(lambda row: (row.YMax2 + row.YMin2) / 2, axis=1)
-    #df['aspect1'] = df.apply(lambda row: (row.XMax1 - row.XMin1) / (row.YMax1 - row.YMin1 + 1e-6), axis=1)
-    #df['aspect2'] = df.apply(lambda row: (row.XMax2 - row.XMin2) / (row.YMax2 - row.YMin2 + 1e-6), axis=1)
+    df['size1'] = df.apply(lambda row: (row.XMax1 - row.XMin1) * (row.YMax1 - row.YMin1), axis=1)
+    df['size2'] = df.apply(lambda row: (row.XMax2 - row.XMin2) * (row.YMax2 - row.YMin2), axis=1)
+    df['xcenter1'] = df.apply(lambda row: (row.XMax1 + row.XMin1) / 2, axis=1)
+    df['xcenter2'] = df.apply(lambda row: (row.XMax2 + row.XMin2) / 2, axis=1)
+    df['ycenter1'] = df.apply(lambda row: (row.YMax1 + row.YMin1) / 2, axis=1)
+    df['ycenter2'] = df.apply(lambda row: (row.YMax2 + row.YMin2) / 2, axis=1)
+    df['aspect1'] = df.apply(lambda row: (row.XMax1 - row.XMin1) / (row.YMax1 - row.YMin1 + 1e-6), axis=1)
+    df['aspect2'] = df.apply(lambda row: (row.XMax2 - row.XMin2) / (row.YMax2 - row.YMin2 + 1e-6), axis=1)
     df['xcenterdiff'] = df.apply(lambda row: ((row.XMax1 + row.XMin1) - (row.XMax2 + row.XMin2)) / 2, axis=1)
     df['ycenterdiff'] = df.apply(lambda row: ((row.YMax1 + row.YMin1) - (row.YMax2 + row.YMin2)) / 2, axis=1)
     return df
@@ -188,7 +186,7 @@ def get_train_data(args):
     df_pos.RelationshipLabel = 1
     print(df_pos.head())
 
-    df_neg = shuffle(pd.read_csv(args.neg_sample_fn)).iloc[:2500].copy()
+    df_neg = shuffle(pd.read_csv(args.neg_sample_fn)) #.iloc[:2500].copy()
     df_neg.RelationshipLabel = 0
     #df_neg.iloc[0].RelationshipLabel = 'xxx'
     print(df_neg.head())
@@ -219,7 +217,7 @@ def train(args):
         #eval_metric = ['Accuracy'],
 
         iterations=1000, #2000,
-        learning_rate=0.1,
+        learning_rate=0.05,
         border_count=254,
         metric_period=10,
         #depth=5,
