@@ -152,7 +152,7 @@ def parallel_apply(df, func, n_cores=24):
 
 def add_features(df):
     df['iou'] = df.apply(lambda row: get_iou(row), axis=1) 
-    df['coveriou'] = df.apply(lambda row: get_cover_iou(row), axis=1) 
+    #df['coveriou'] = df.apply(lambda row: get_cover_iou(row), axis=1) 
     df['size1'] = df.apply(lambda row: (row.XMax1 - row.XMin1) * (row.YMax1 - row.YMin1), axis=1)
     df['size2'] = df.apply(lambda row: (row.XMax2 - row.XMin2) * (row.YMax2 - row.YMin2), axis=1)
     df['xcenter1'] = df.apply(lambda row: (row.XMax1 + row.XMin1) / 2, axis=1)
@@ -184,20 +184,20 @@ def get_train_data(args):
     df_pos = df_vrd.loc[df_vrd.RelationshipLabel=='wears'].copy()
     #df_pos = df_vrd.loc[df_vrd.RelationshipLabel!='is'].copy()
     df_pos.RelationshipLabel = 1
-    print(df_pos.head())
+    print(df_pos.shape)
 
     df_neg = shuffle(pd.read_csv(args.neg_sample_fn)) #.iloc[:2500].copy()
     df_neg.RelationshipLabel = 0
     #df_neg.iloc[0].RelationshipLabel = 'xxx'
-    print(df_neg.head())
+    print(df_neg.shape)
 
     df_train = pd.concat([df_pos, df_neg], axis=0, sort=False)
     print(df_train.shape)
 
     df_train = shuffle(df_train)
     df_train = parallel_apply(df_train, add_features)
-    print(df_train.head())
-    print(df_train.dtypes)
+    #print(df_train.head())
+    #print(df_train.dtypes)
 
     y = df_train.RelationshipLabel
     #print(y[:20])
@@ -207,7 +207,7 @@ def get_train_data(args):
 
 def train(args):
     X_train, X_val, y_train, y_val = get_train_data(args)
-    print(X_train.dtypes)
+    #print(X_train.dtypes)
     categorical_feature_indices = np.where(X_train.dtypes != np.float)[0]
     print(categorical_feature_indices)
 
@@ -216,8 +216,8 @@ def train(args):
         #custom_metric = ['Accuracy'],
         #eval_metric = ['Accuracy'],
 
-        iterations=1000, #2000,
-        learning_rate=0.05,
+        iterations=1500, #2000,
+        learning_rate=0.1,
         border_count=254,
         metric_period=10,
         #depth=5,

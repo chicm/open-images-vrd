@@ -29,38 +29,36 @@ def get_neg_sample(group):
     n = len(group.LabelName.values)
     if n < 2:
         return []
-    used = set()
     result = []
-    for _ in range(50):
-        idx1 = random.choice(list(range(n)))
-        idx2 = random.choice(list(range(n)))
-        if (idx1 != idx2) and ((idx1, idx2) not in used):
-            row1 = group.iloc[idx1]
-            row2 = group.iloc[idx2]
-            label_name1 = row1.LabelName
-            label_name2 = row2.LabelName
-            if label_name1 in set(classes_1) and label_name2 in set(classes_2):
-            #if ','.join([label_name1, label_name2]) in classes:
-                result.append({
-                    'ImageID': img_id,
-                    'LabelName1': label_name1,
-                    'LabelName2': label_name2,
-                    'XMin1': row1.XMin,
-                    'XMax1': row1.XMax,
-                    'YMin1': row1.YMin,
-                    'YMax1': row1.YMax,
-                    'XMin2': row2.XMin,
-                    'XMax2': row2.XMax,
-                    'YMin2': row2.YMin,
-                    'YMax2': row2.YMax,
-                    'RelationshipLabel': 'none'
-                })
-                #result.append((group.iloc[idx1], group.iloc[idx2]))
-                used.add((idx1, idx2))
-        if len(used) >= 20:
-            break
+    max_sample_per_img = 100
+
+    rows_c1 = [group.iloc[i] for i in range(group.shape[0]) if group.iloc[i].LabelName in classes_1]
+    rows_c2 = [group.iloc[i] for i in range(group.shape[0]) if group.iloc[i].LabelName in classes_2]
+
+    if len(rows_c1) < 1 or len(rows_c2) < 1:
+        return []
+
+    for row1 in rows_c1:
+        for row2 in rows_c2:
+            if len(result) >= max_sample_per_img:
+                return result
+            result.append({
+                'ImageID': img_id,
+                'LabelName1': row1.LabelName,
+                'LabelName2': row2.LabelName,
+                'XMin1': row1.XMin,
+                'XMax1': row1.XMax,
+                'YMin1': row1.YMin,
+                'YMax1': row1.YMax,
+                'XMin2': row2.XMin,
+                'XMax2': row2.XMax,
+                'YMin2': row2.YMin,
+                'YMax2': row2.YMax,
+                'RelationshipLabel': 'none'
+            })
     #print(len(result))
     return result
+
 
 def create_train_data(args):
     df_box = pd.read_csv(os.path.join(DATA_DIR, 'challenge-2019-train-vrd-bbox.csv'))
@@ -112,14 +110,14 @@ def parallel_apply(df, func, n_cores=24):
 
 def add_features(df):
     df['iou'] = df.apply(lambda row: get_iou(row), axis=1) 
-    #df['size1'] = df.apply(lambda row: (row.XMax1 - row.XMin1) * (row.YMax1 - row.YMin1), axis=1)
-    #df['size2'] = df.apply(lambda row: (row.XMax2 - row.XMin2) * (row.YMax2 - row.YMin2), axis=1)
+    df['size1'] = df.apply(lambda row: (row.XMax1 - row.XMin1) * (row.YMax1 - row.YMin1), axis=1)
+    df['size2'] = df.apply(lambda row: (row.XMax2 - row.XMin2) * (row.YMax2 - row.YMin2), axis=1)
     df['xcenter1'] = df.apply(lambda row: (row.XMax1 + row.XMin1) / 2, axis=1)
     df['xcenter2'] = df.apply(lambda row: (row.XMax2 + row.XMin2) / 2, axis=1)
     df['ycenter1'] = df.apply(lambda row: (row.YMax1 + row.YMin1) / 2, axis=1)
     df['ycenter2'] = df.apply(lambda row: (row.YMax2 + row.YMin2) / 2, axis=1)
-    #df['aspect1'] = df.apply(lambda row: (row.XMax1 - row.XMin1) / (row.YMax1 - row.YMin1 + 1e-6), axis=1)
-    #df['aspect2'] = df.apply(lambda row: (row.XMax2 - row.XMin2) / (row.YMax2 - row.YMin2 + 1e-6), axis=1)
+    df['aspect1'] = df.apply(lambda row: (row.XMax1 - row.XMin1) / (row.YMax1 - row.YMin1 + 1e-6), axis=1)
+    df['aspect2'] = df.apply(lambda row: (row.XMax2 - row.XMin2) / (row.YMax2 - row.YMin2 + 1e-6), axis=1)
     df['xcenterdiff'] = df.apply(lambda row: ((row.XMax1 + row.XMin1) - (row.XMax2 + row.XMin2)) / 2, axis=1)
     df['ycenterdiff'] = df.apply(lambda row: ((row.YMax1 + row.YMin1) - (row.YMax2 + row.YMin2)) / 2, axis=1)
     return df
@@ -143,20 +141,20 @@ def get_train_data(args):
     df_pos = df_vrd.loc[df_vrd.RelationshipLabel=='interacts_with'].copy()
     #df_pos = df_vrd.loc[df_vrd.RelationshipLabel!='is'].copy()
     df_pos.RelationshipLabel = 1
-    print(df_pos.head())
+    print(df_pos.shape)
 
-    df_neg = shuffle(pd.read_csv(args.neg_sample_fn)).iloc[:4000]
+    df_neg = shuffle(pd.read_csv(args.neg_sample_fn))#.iloc[:4000]
     df_neg.RelationshipLabel = 0
     #df_neg.iloc[0].RelationshipLabel = 'xxx'
-    print(df_neg.head())
+    print(df_neg.shape)
 
     df_train = pd.concat([df_pos, df_neg], axis=0, sort=False)
     print(df_train.shape)
 
     df_train = shuffle(df_train)
     df_train = parallel_apply(df_train, add_features)
-    print(df_train.head())
-    print(df_train.dtypes)
+    #print(df_train.head())
+    #print(df_train.dtypes)
 
     y = df_train.RelationshipLabel
     #print(y[:20])
@@ -166,7 +164,7 @@ def get_train_data(args):
 
 def train(args):
     X_train, X_val, y_train, y_val = get_train_data(args)
-    print(X_train.dtypes)
+    #print(X_train.dtypes)
     categorical_feature_indices = np.where(X_train.dtypes != np.float)[0]
     print(categorical_feature_indices)
 
@@ -175,8 +173,8 @@ def train(args):
         #custom_metric = ['Accuracy'],
         #eval_metric = ['Accuracy'],
 
-        iterations=500, #2000,
-        #learning_rate=0.1,
+        iterations=1500, #2000,
+        learning_rate=0.1,
         border_count=254,
         metric_period=10,
         #depth=5,
