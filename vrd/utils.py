@@ -94,5 +94,21 @@ def get_iou(row):
     assert iou <= 1.0
     return iou
 
+def add_XYinter(sub_final_nonis):
+    tmp1 = pd.concat([sub_final_nonis['XMax1'] - sub_final_nonis['XMin2'],\
+               sub_final_nonis['XMax2'] - sub_final_nonis['XMin1']],axis=1).max(axis=1)
+    tmp2 = sub_final_nonis['XMax1'] - sub_final_nonis['XMin1'] + \
+               sub_final_nonis['XMax2'] - sub_final_nonis['XMin2']
+    tmp3 = tmp1/tmp2
+    tmp4 = pd.concat([sub_final_nonis['YMax1'] - sub_final_nonis['YMin2'],\
+               sub_final_nonis['YMax2'] - sub_final_nonis['YMin1']],axis=1).max(axis=1)
+    tmp5 = sub_final_nonis['YMax1'] - sub_final_nonis['YMin1'] + \
+               sub_final_nonis['YMax2'] - sub_final_nonis['YMin2']
+    tmp6 = tmp4/tmp5
+    sub_final_nonis['Xinter'] = tmp3
+    sub_final_nonis['Yinter'] = tmp6
+    return sub_final_nonis
+
+
 if __name__ == '__main__':
     get_top_classes()

@@ -6,7 +6,7 @@ import time
 import math
 from multiprocessing import Pool
 from catboost import CatBoostClassifier
-from utils import get_iou
+from utils import get_iou, add_XYinter
 from train_plays import classes_1, classes_2, add_features, parallel_apply
 
 model = None
@@ -65,6 +65,10 @@ def fast_get_prediction_string(test_row):
     cur_x_test['sort_score'] = cur_x_test.apply(lambda row: get_sort_score(row), axis=1)
     
     cur_x_test = cur_x_test.loc[cur_x_test.RelationshipLabel != 'none'].copy()
+
+    cur_x_test = add_XYinter(cur_x_test)
+    cur_x_test = cur_x_test.loc[(cur_x_test.Xinter < 1.) & (cur_x_test.Yinter < 1.)].copy()
+
 
     cur_x_test = cur_x_test.nlargest(50, 'sort_score').copy()
     #cur_x_test.sort_values(by='sort_score', axis=0, ascending=False, inplace=False, kind='quicksort')
